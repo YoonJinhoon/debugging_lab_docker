@@ -1,185 +1,187 @@
-Debugging Lab
+# Debugging Lab
 
-A hands-on lab for debugging C memory bugs using gdb and logs: trace back from the crash point → analyze the cause → fix it.
+A hands-on practice lab designed to trace crash points, analyze root causes, and fix C memory bugs using GDB and logs. It consists of 20 standalone source files organized by difficulty, each intentionally injected with exactly one representative memory bug.
 
-There are 20 independently executable challenges, organized by difficulty. Each challenge contains exactly one representative memory bug.
+Every buggy program in this lab is guaranteed to crash (`SIGSEGV`, `SIGABRT`, or `SIGBUS`) upon execution.
 
-All bug programs in this lab are designed to always crash when executed (SIGSEGV / SIGABRT / SIGBUS).
+**Project Structure**
 
-Structure
 memory-debugging-lab/
 ├── README.md
-├── Makefile                     # Build/run/debugging helpers (gdb only)
-├── Dockerfile                   # gcc/gdb Linux lab environment
+├── Makefile                     # Build/run/debug helper (GDB focused)
+├── Dockerfile                   # Linux lab environment with GCC and GDB
 ├── .devcontainer/               # VS Code Dev Containers configuration
-├── .vscode/                     # launch.json / tasks.json (F5 debugging)
-├── scripts/check.sh             # Run all challenges → summarize whether they crash
-├── challenges/                  # Buggy code (analyze the cause here)
+├── .vscode/                     # launch.json / tasks.json (F5 debugging support)
+├── scripts/check.sh             # Run all challenges and summarize crash statuses
+├── challenges/                  # Buggy source codes (analyze root causes here)
 │   ├── 01_use_after_free/bug.c
 │   ├── ...
 │   └── 20_vector_stale_pointer/bug.c
 
+Each bug.c contains header comments detailing the scenario, expected behavior, symptoms, how to debug with GDB, and how to debug with printf.
 
-Each bug.c has comments at the top describing the scenario / expected behavior / symptoms / how to catch it with gdb / how to catch it with printf.
+If you are confident in your debugging skills, it is recommended to solve and fix the bugs directly without reading the top comments.
 
-If you are confident in your skills, it is recommended that you try to fix the problem yourself without referring to the comments at the top.
+Note: The solutions/ directory is excluded via .gitignore and is not included in the student distribution (maintained locally by coaches only). Therefore, solution-related commands such as make solutions and make check-all only function in the coach environment.
 
-Note: solutions/ is excluded by .gitignore and is not included in the distributed version for students (it is maintained locally by the instructor only). Therefore, solution-related commands such as make solutions and make check-all work only in the instructor's environment.
+**Environment Setup**
+Linux, macOS — Practice using Docker or Dev Containers.
 
-Environment
+Windows — Ensure your Docker backend is set to WSL 2. (Docker Desktop → Settings → General → Check "Use the WSL 2 based engine"). Running an Ubuntu + glibc container on top of WSL 2 (Linux kernel) ensures that crash reproduction behaves identically to Linux. While the Hyper-V backend also runs a Linux VM and works, running in "Windows containers" mode is strictly unsupported.
 
-Linux, macOS — The lab is run using Docker / Dev Containers.
+Crash types (stack smashing, glibc double-free, invalid pointer detection, etc.) are standardized around Linux glibc. Because the crash signals and behaviors may vary across different libc implementations or operating systems, verification should always be done inside Docker (Ubuntu).
 
-Windows — Make sure the Docker backend is WSL2. (Docker Desktop → Settings → General → Check "Use the WSL 2 based engine") An Ubuntu + glibc container must run on the WSL2 (Linux) kernel so that crashes are reproduced the same way as on Linux. The Hyper-V backend also works because it runs a Linux VM, but do not run Docker Desktop in Windows container mode.
+Reference Environment (Inside Container): Ubuntu 24.04 LTS · GCC 13 · glibc 2.39 · GDB 15. (Host OS or distribution does not matter—it runs within this exact toolchain inside the container.)
 
-Crash types (stack smashing, glibc double-free/invalid-pointer detection, etc.) are based on Linux glibc.
-The same code may produce different crash signals on other libc implementations / operating systems, so use Docker (Ubuntu) for verification.
-
-Verified environment (container): Ubuntu 24.04 LTS · gcc 13 · glibc 2.39 · gdb 15. (The host OS/distribution does not matter — the code runs inside the container using this toolchain.)
-
-Run the Lab with Docker (gcc + gdb)
+**Practice with Docker (GCC + GDB)**
 docker build -t memdbg .
 docker run --rm -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
     -v "$PWD":/work memdbg
+
 # ── Inside the container ──
-make check                                  # Run all 20 → summarize whether they crash
-gdb ./build/06_null_deref                   # run → bt → frame N → print variable
+make check                                  # Run all 20 challenges and summarize crash results
+gdb ./build/06_null_deref                   # run → bt → frame N → print <variable>
 
+## VS Code Integration (Mac / Windows) — Dev Containers
 
---cap-add=SYS_PTRACE and --security-opt seccomp=unconfined allow gdb
-to attach to processes inside the container.
+You can attach VS Code directly to the Docker container (Linux toolchain) to use GDB with a GUI on macOS or Windows. This repository includes `.devcontainer/devcontainer.json`, `.vscode/launch.json`, and `.vscode/tasks.json`.
 
-VS Code Integration (Mac / Windows) — Dev Containers
+### Prerequisites (Common)
 
-By connecting VS Code to the Docker container (Linux toolchain), you can use gdb through a GUI even on Mac/Windows.
+* Install and run **Docker Desktop**.
+* **Windows users must use the WSL 2 backend:** Check `Docker Desktop` → `Settings` → `General` → **"Use the WSL 2 based engine"**. (This lab is designed specifically for Linux containers; running on top of WSL 2 ensures that crash behavior matches native Linux.)
+* Install **VS Code** along with the **Dev Containers** extension (`ms-vscode-remote.remote-containers`).
 
-This repository includes .devcontainer/devcontainer.json, .vscode/launch.json, and .vscode/tasks.json.
+### Method A — Reopen in Container (Recommended, One-Click)
 
-Prerequisites (Common)
-
-Install and run Docker Desktop
-
-Windows must use the WSL2 backend — Docker Desktop → Settings → General → Make sure "Use the WSL 2 based engine" is enabled. (This lab is for Linux containers only, and running on WSL2 ensures that crashes are reproduced the same way as on Linux.)
-
-VS Code + the "Dev Containers" extension (ms-vscode-remote.remote-containers)
-
-Method A — Reopen in Container (Recommended, One Click)
-
-Open the project folder in VS Code
-
-Click "Reopen in Container" in the bottom-right corner (if it does not appear, press F1 → Dev Containers: Reopen in Container)
-
-On the first run, the image is built (1–3 minutes), then VS Code connects to Linux inside the container
-
-Run the lab directly from the integrated terminal:
-
-make check                                  # Summarize whether all 20 crash
+1. Open this project folder in VS Code.
+2. Click **"Reopen in Container"** in the bottom-right notification popup (or press `F1` → run `Dev Containers: Reopen in Container`).
+3. On first launch, the image will build (1–3 minutes), and VS Code will attach to Linux inside the container.
+4. Run commands directly in the integrated terminal:
+```bash
+make check                                  # Summarize crash statuses across all 20 challenges
 gdb ./build/06_null_deref                   # run → bt
 
+```
 
-Press F5 for GUI debugging: select a challenge to inspect breakpoints, backtraces, and variables with gdb.
 
-Method B — Attach to a Running Container
-cd <this project folder>
+5. **GUI Debugging with F5:** Select a challenge configuration to inspect breakpoints, backtraces, and variables visually with GDB.
+
+### Method B — Attach to a Running Container
+
+```bash
+cd <path-to-this-project>
 docker build -t memdbg .
 docker run -d --name memdbg-dev --cap-add=SYS_PTRACE \
   --security-opt seccomp=unconfined -v "$PWD":/work -w /work memdbg sleep infinity
 
+```
 
-In VS Code: F1 → Dev Containers: Attach to Running Container → memdbg-dev → Open the folder /work
+In VS Code: Press `F1` → `Dev Containers: Attach to Running Container` → select `memdbg-dev` → open folder `/work`.
 
-In Windows PowerShell, replace "$PWD" with ${PWD}.
+*(For Windows PowerShell, replace `"$PWD"` with `${PWD}`.)*
 
-Things to Keep in Mind
+### Important Notes
 
-The folder is bidirectionally mounted at /work inside the container (edits made on Mac/Windows are immediately reflected in the container).
+* The project directory is two-way mounted to `/work` inside the container (edits made on macOS/Windows reflect immediately inside the container).
+* Executable binaries inside `build/` are compiled for Linux. **Do not run `make` directly on the host machine**; always build and run inside the container terminal.
+* The flags `--cap-add=SYS_PTRACE` and `--security-opt seccomp=unconfined` configured in `runArgs` are mandatory for GDB debugging to function properly inside Docker.
+* Apple Silicon Macs will run an `arm64` Linux container, where GCC and GDB function identically.
 
-build/ contains Linux binaries, so do not run make directly on the host. Build and run from the container terminal.
+---
 
-The --cap-add=SYS_PTRACE and --security-opt seccomp=unconfined options in runArgs are required for gdb debugging to work properly inside the container.
+## Build & Run Summary
 
-Apple Silicon Macs run an arm64 Linux container, and gcc/gdb work normally in that environment as well.
-
-Build / Run Summary
-make list                     # List challenges
+```bash
+make list                     # List all challenges
 make all                      # Build all bug.c files without sanitizers → build/<name>
-make run  NAME=01_use_after_free     # Run a challenge (crashes if the bug is present)
-make gdb  NAME=06_null_deref         # Debug with gdb (run → bt)
-make check                    # Run all challenges → summarize whether they crash
-make clean                    # Clean build/
+make run NAME=01_use_after_free     # Run the specified challenge (crashes if buggy)
+make gdb NAME=06_null_deref         # Debug with GDB (run → bt)
+make check                    # Run all challenges and summarize crash results
+make clean                    # Clean up the build/ directory
 
-# ── The following are instructor/local-only (work only when solutions/ exists) ──
-make solutions                # Build solution code → build/sol_<name>
-make check-all                # Verify both challenges (crash) + solutions (normal exit 0)
+# ── Coach / Local only (requires solutions/ directory) ──
+make solutions                # Build solution codes → build/sol_<name>
+make check-all                # Verify both challenges (crash) and solutions (exit code 0)
 
+```
 
-The code is built with -g -O0 -fno-omit-frame-pointer, so gdb backtraces include accurate source lines and variable information.
+Binaries are compiled with `-g -O0 -fno-omit-frame-pointer`, ensuring GDB backtraces display precise source line numbers and variable information.
 
-Challenge List (20)
-#	Name	Bug Type	Crash Seen in gdb
-01	use_after_free	vtable widget: freed slot not cleared → function pointer call	SIGSEGV
-02	stack_buffer_overflow	Stack array overflow caused by triangular indexing off-by-one	SIGABRT (stack smashing)
-03	heap_buffer_overflow	Dynamic array growth bug (capacity vs. actual buffer mismatch)	SIGABRT (realloc detection)
-04	double_free	Same object freed from two aliased indices	SIGABRT (double free)
-05	null_return_deref	NULL returned for a missing key during config template expansion, then dereferenced	SIGSEGV
-06	null_deref	Header parser: line without : → write through a NULL pointer returned by strchr	SIGSEGV
-07	stack_use_after_return	Local array address escapes as a view → dereferenced after frame reuse	SIGSEGV
-08	uninitialized_read	Dereferencing an uninitialized row pointer after dirty heap reuse	SIGSEGV
-09	strcpy_overflow	Off-by-one in join size calculation (last fragment omitted)	SIGSEGV
-10	realloc_dangling	Undo snapshot becomes dangling after realloc moves the buffer → double free	SIGABRT (double free)
-11	global_overflow	Bounds check missing in global arena bump allocator	SIGSEGV
-12	free_non_heap	Individually freeing CSV fields (internal pointers)	SIGABRT (invalid ptr)
-13	linked_list_uaf	Job queue filter: read next after free (UAF)	SIGSEGV
-14	integer_overflow_alloc	Integer overflow in image w*h*ch multiplication → under-allocation	SIGSEGV
-15	dangling_in_struct	Session invokes a callback belonging to a freed User	SIGBUS/SIGSEGV
-16	unused_cap_overflow	append ignores the cap argument, causing an overflow	SIGABRT (stack smashing)
-17	ownership_uaf	Message broker: consumer frees object + audit log frees it again (UAF)	SIGSEGV
-18	cleanup_double_free	Multi-resource goto ladder: validation failure path frees tx twice	SIGABRT (double free)
-19	realloc_shrink_overflow	Iterate using the old len after trimming a signal buffer	SIGSEGV
-20	vector_stale_pointer	Histogram hot pointer becomes stale after vector growth	SIGSEGV
+---
 
-Verification: When running make check on Linux (Docker), all 20 challenges crash.
+## Challenge List (20 Challenges)
 
-gdb Cheat Sheet
-gdb ./build/06_null_deref        # Start the debugger
-(gdb) run                        # Run → the bug code crashes here
-(gdb) bt                         # Backtrace: find the function/line where it crashed
-(gdb) frame 1                    # Move to a specific stack frame
-(gdb) print variable             # Inspect variable/pointer values (e.g. print p, print i)
-(gdb) info locals                # Show all local variables in the current frame
-(gdb) list                       # Show source around the crash point
+| # | Name | Bug Type | Crash Signal Seen in GDB |
+| --- | --- | --- | --- |
+| 01 | `use_after_free` | vtable widget: Slot not cleared after free → function pointer invocation | `SIGSEGV` |
+| 02 | `stack_buffer_overflow` | Triangular indexing off-by-one overflowing stack array | `SIGABRT` (stack smashing) |
+| 03 | `heap_buffer_overflow` | Dynamic array growth bug (capacity vs. allocation mismatch) | `SIGABRT` (realloc detection) |
+| 04 | `double_free` | Freeing the same object twice via aliased index pointers | `SIGABRT` (double free) |
+| 05 | `null_return_deref` | Dereferencing `NULL` returned for a missing key in config expansion | `SIGSEGV` |
+| 06 | `null_deref` | Header parser: Writing to `strchr` `NULL` return on lines missing `:` | `SIGSEGV` |
+| 07 | `stack_use_after_return` | Local array pointer escaping to a view struct → dereference after frame reuse | `SIGSEGV` |
+| 08 | `uninitialized_read` | Dereferencing uninitialized row pointer due to dirty heap reuse | `SIGSEGV` |
+| 09 | `strcpy_overflow` | Join size calculation off-by-one (omitted trailing piece) | `SIGSEGV` |
+| 10 | `realloc_dangling` | Undo snapshot pointer invalidated by `realloc` move → double free | `SIGABRT` (double free) |
+| 11 | `global_overflow` | Unchecked bounds in global arena bump allocator | `SIGSEGV` |
+| 12 | `free_non_heap` | Calling `free()` directly on an interior pointer in CSV fields | `SIGABRT` (invalid pointer) |
+| 13 | `linked_list_uaf` | Job queue filter: Reading `node->next` after `free(node)` (UAF) | `SIGSEGV` |
+| 14 | `integer_overflow_alloc` | Image `w * h * ch` multiplication overflow → under-allocation | `SIGSEGV` |
+| 15 | `dangling_in_struct` | Session invokes callback on a freed User struct | `SIGBUS` / `SIGSEGV` |
+| 16 | `unused_cap_overflow` | Append function ignores `capacity` parameter, overflowing buffer | `SIGABRT` (stack smashing) |
+| 17 | `ownership_uaf` | Message broker: Consumer frees message, audit log double frees (UAF) | `SIGSEGV` |
+| 18 | `cleanup_double_free` | Multi-resource `goto` ladder: Transaction double freed on validation failure path | `SIGABRT` (double free) |
+| 19 | `realloc_shrink_overflow` | Signal buffer trimmed with `realloc`, but iterated using old `len` | `SIGSEGV` |
+| 20 | `vector_stale_pointer` | Histogram hot pointer becomes stale after vector capacity reallocation | `SIGSEGV` |
 
+*Verification:* Running `make check` inside the Linux (Docker) environment should result in all 20 challenges crashing.
 
-Commands useful for tracking memory bugs:
+---
 
+## GDB Cheat Sheet
+
+```bash
+gdb ./build/06_null_deref        # Start debugger
+(gdb) run                        # Execute program → crashes here
+(gdb) bt                         # Backtrace: View call stack and crash location
+(gdb) frame 1                    # Switch to stack frame 1
+(gdb) print var                  # Inspect variable/pointer value (e.g., print p, print i)
+(gdb) info locals                # List all local variables in the current frame
+(gdb) list                       # View source code surrounding the crash location
+
+```
+
+Useful commands for tracing memory bugs:
+
+```bash
 (gdb) break file:line            # Set a breakpoint at a specific line
-(gdb) watch variable             # Stop when the value changes
-(gdb) x/8xg pointer              # Dump 8 words of hexadecimal memory at the pointer
-(gdb) p (long)pointer - (long)base # Calculate the offset between two pointers (to determine out-of-bounds access)
+(gdb) watch var                  # Stop execution when the variable value changes
+(gdb) x/8xg ptr                  # Dump 8 quadwords (64-bit words) of memory in hex
+(gdb) p (long)ptr - (long)base   # Calculate offset between two pointers (bounds check)
 
-Two Approaches: gdb vs. printf (Logging)
+```
 
-The comments at the top of each bug.c include both [Catch with gdb] and [Catch with printf (logging)] approaches. It is recommended to try both and compare them.
+---
 
-	gdb	printf (logging)
-Method	Trace the location after a crash with run → bt	Add logs to the code and track value changes
-Advantage	Immediate debugging without recompiling or modifying code; powerful variable/memory inspection	Observe the entire flow chronologically; easy conditional logging
-Caveat	If the crash occurs inside libc, use frame/up to move back to your own code	stdout is buffered, so logs may be lost when the program crashes
+## Two Approaches: GDB vs. `printf` (Logging)
 
-Key point when using printf for debugging: to prevent the log immediately before the crash from disappearing, print to stderr (fprintf(stderr, ...)), or if you use stdout, call fflush(stdout) after each output or disable buffering with setvbuf(stdout, NULL, _IONBF, 0).
+The header comments in each `bug.c` contain both **[Debugging with GDB]** and **[Debugging with `printf`]** guides. We encourage trying both methods to compare their strengths.
 
-Recommended Learning Flow
+| Approach | Method | Advantages | Caveats |
+| --- | --- | --- | --- |
+| **GDB** | Post-mortem trace: `run` → `bt` to trace the crash location backwards | Immediate inspection of variables/memory without recompilation or source changes | When crashing inside `libc`, you must navigate up stack frames (`up` / `frame`) to your code |
+| **`printf` (Logs)** | Instrument code with print statements to trace variable transitions | Clear chronological view of control flow; simple conditional inspection | `stdout` is buffered and logs may be lost upon crashing |
 
-Read challenges/<name>/bug.c and predict the symptom and where it will crash.
+> **Key Rule for `printf` Debugging:**
+> To ensure logs printed immediately before a crash are not lost due to buffering, output to `stderr` using `fprintf(stderr, ...)`. If using `stdout`, flush the stream after each print (`fflush(stdout);`) or disable buffering entirely via `setvbuf(stdout, NULL, _IONBF, 0);`.
 
-Run make gdb NAME=<name> → run to trigger the crash, then use bt to find the crash location.
+---
 
-Use print / info locals / x to inspect pointers, indices, and sizes and identify the cause.
+## Recommended Learning Workflow
 
-(Alternatively or additionally) Following [Catch with printf (logging)] in the comments, add fprintf(stderr, ...) logs and observe chronologically where the values become inconsistent.
-
-Modify the code to eliminate the cause, then run make run NAME=<name> to verify that the crash is gone and the program exits normally (0). (The standard solution is provided by the instructor.)
-
-Notice
-
-Questions about the development environment are not supported. Configure the environment to suit your own setup based on the code and documentation provided.
+1. Read `challenges/<name>/bug.c` and predict the symptoms and likely crash point.
+2. Run `make gdb NAME=<name>`, trigger the crash with `run`, and locate the crash site with `bt`.
+3. Inspect pointers, indices, and sizes using `print`, `info locals`, and `x` to pinpoint the root cause.
+4. *(Optional / In addition)* Add `fprintf(stderr, ...)` logs following the **[Debugging with `printf`]** guide to trace values chronologically and see where states diverge.
+5. Modify the code to eliminate the root cause, then verify with `make run NAME=<name>` that the program exits cleanly with return code `0`. *(Standard solutions are provided by the instructor.)*
