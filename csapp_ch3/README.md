@@ -34,12 +34,12 @@ long move_example(long x) {
 Compare the two versions side-by-side
 
 ** `-O0` (Unoptimized, 10 instructions) | `-O2` (Optimized, 2 functional instructions) **
- `pushq %rbp`                           | *(no stack setup)* 
- `movq %rsp, %rbp`                      | *(no base pointer frame)* 
- `movq %rdi, -24(%rbp)`                 | *(no memory write for `x`)* 
- `movq -24(%rbp), %rax`                 | *(no memory read)* 
- `addq $4, %rax`                        | `leaq 4(%rdi), %rax` 
- `movq %rax, -8(%rbp)`                  | *(no memory write for `y`)* 
- `movq -8(%rbp), %rax`                  | *(no memory read)* 
- `popq %rbp`                            | *(no stack teardown)* 
- `ret`                                  | `ret` 
+ pushq %rbp                           | (no stack setup)
+ movq %rsp, %rbp                      | (no base pointer frame)
+ movq %rdi, -24(%rbp)                 | (no memory write for `x`)
+ movq -24(%rbp), %rax                 | (no memory read)
+ addq $4, %rax                        | leaq 4(%rdi), %rax
+ movq %rax, -8(%rbp)                  | (no memory write for `y`)
+ movq -8(%rbp), %rax                  | (no memory read)
+ popq %rbp                            | (no stack teardown)
+ ret                                  | ret
