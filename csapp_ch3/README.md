@@ -33,86 +33,19 @@ long move_example(long x) {
 
 Compare the two versions side-by-side:[cite: 1]
 
-| `-O0` (Unoptimized, 10 instructions) | `-O2` (Optimized, 2 functional instructions) |
-| :--- | :--- |
-| `pushq %rbp` | *(no stack setup)* |
-| `movq %rsp, %rbp` | *(no base pointer frame)* |
-| `movq %rdi, -24(%rbp)` | *(no memory write for `x`)* |
-| `movq -24(%rbp), %rax` | *(no memory read)* |
-| `addq $4, %rax` | `leaq 4(%rdi), %rax` |
-| `movq %rax, -8(%rbp)` | *(no memory write for `y`)* |
-| `movq -8(%rbp), %rax` | *(no memory read)* |
-| `popq %rbp` | *(no stack teardown)* |
-| `ret` | `ret` |
-
----
-
-## Section 3.6: Control Flow, Condition Codes, and Inversion
-
-### 1. Condition Codes Register ($\mathcal{C}$)
-
-Arithmetic operations update single-bit status flags in `%rflags`:
-
-| Flag | Name | Mathematical Definition | Hardware Meaning |
-| :--- | :--- | :--- | :--- |
-| `ZF` | Zero Flag | $\text{Result} == 0$ | Operation produced zero (e.g., $a - b = 0 \implies a == b$). |
-| `SF` | Sign Flag | $\text{Result} < 0$ | Most significant bit of result is 1 (negative). |
-| `OF` | Overflow Flag | $(a > 0 \land b > 0 \land \text{Res} < 0) \lor (a < 0 \land b < 0 \land \text{Res} > 0)$ | Two's-complement signed overflow occurred. |
-| `CF` | Carry Flag | $\text{Unsigned Overflow}$ | Unsigned addition carry-out or subtraction borrow. |
-
----
-
-### 2. Source Code & Disassembly (`test3_6.c`)
-
-```c
-long max(long a, long b) {
-    if (a > b) {
-        return a;
-    } else {
-        return b;
-    }
-}
-
-### Control Flow Execution Path (`-O0`)
-
-```text
-                  +-----------------------------------+
-                  |           Function Entry          |
-                  |  pushq   %rbp                     |
-                  |  movq    %rsp, %rbp               |
-                  |  movq    %rdi, -8(%rbp)   (save a)|
-                  |  movq    %rsi, -16(%rbp)  (save b)|
-                  +-----------------------------------+
-                                    |
-                                    v
-                  +-----------------------------------+
-                  |             Condition             |
-                  |  movq    -8(%rbp), %rax   (%rax=a)|
-                  |  cmpq    -16(%rbp), %rax  (a - b) |
-                  +-----------------------------------+
-                                    |
-                            jle .L2 (a <= b)
-                           /                 \
-                 [ True ] /                   \ [ False ]
-                         /                     \
-                        v                       v
-      +----------------------------+  +----------------------------+
-      |      .L2 (Else Block)      |  |      Then-Fallthrough      |
-      |  movq  -16(%rbp), %rax     |  |  movq  -8(%rbp), %rax      |
-      |        (%rax = b)          |  |        (%rax = a)          |
-      +----------------------------+  |  jmp   .L3                 |
-                    |                 +----------------------------+
-                    \                               /
-                     \                             /
-                      ----->        .L3       <----
-                                     |
-                                     v
-                  +-----------------------------------+
-                  |             Function Exit         |
-                  |  popq    %rbp                     |
-                  |  ret                              |
-                  +-----------------------------------+
-
+-------------------------------------------------------------------------------------
+ `-O0` (Unoptimized: 10 instructions) | `-O2` (Optimized: 2 functional instructions)
+-------------------------------------------------------------------------------------
+ pushq %rbp                           | no stack setup)
+ movq %rsp, %rbp                      | no base pointer frame
+ movq %rdi, -24(%rbp)                 | no memory write for `x`
+ movq -24(%rbp), %rax                 | no memory read)
+ addq $4, %rax                        | leaq 4(%rdi), %rax` 
+ ovq %rax, -8(%rbp)                   | no memory write for `y`
+ movq -8(%rbp), %rax                  | no memory read
+ popq %rbp                            | no stack teardown
+ ret                                  | ret
+-------------------------------------------------------------------------------------
 ---
 
 ## Section 3.6: Control Flow, Condition Codes, and Inversion
