@@ -54,13 +54,15 @@ Compare the two versions side-by-side:[cite: 1]
 
 Arithmetic operations update single-bit status flags in `%rflags`:
 
-| Flag | Name | Mathematical Definition | Hardware Meaning |
-| :--- | :--- | :--- | :--- |
-| `ZF` | Zero Flag | $\text{Result} == 0$ | Operation produced zero (e.g., $a - b = 0 \implies a == b$). |
-| `SF` | Sign Flag | $\text{Result} < 0$ | Most significant bit of result is 1 (negative). |
-| `OF` | Overflow Flag | $(a > 0 \land b > 0 \land \text{Res} < 0) \lor (a < 0 \land b < 0 \land \text{Res} > 0)$ | Two's-complement signed overflow occurred. |
-| `CF` | Carry Flag | $\text{Unsigned Overflow}$ | Unsigned addition carry-out or subtraction borrow. |
 
+-------------------------------------------------------------------------------------
+Flag   	Name            	Mathematical Definition	            Hardware Meaning
+-------------------------------------------------------------------------------------
+ZF	   Zero Flag	      Result==0                        	The operation produced a zero (e.g., a−b=0, so a==b).
+SF	   Sign Flag	      Result<0	                           The most significant bit (MSB) of the result is 1 (negative).
+OF	   Overflow Flag	   (a>0,b>0,Res<0)∨(a<0,b<0,Res>0)	   Two's-complement signed overflow occurred.
+CF	   Carry Flag	      Unsigned Overflow	                  An unsigned addition carried out of the MSB, or a borrow occurred.
+-------------------------------------------------------------------------------------
 ---
 
 ### 2. Source Code & Disassembly (`test3_6.c`)
