@@ -111,3 +111,46 @@ long max(long a, long b) {
                   |  popq    %rbp                     |
                   |  ret                              |
                   +-----------------------------------+
+### Control Flow Execution Path (`-O2`)
+
+Unlike the branching diamond of `-O0`, `-O2` uses conditional moves (`cmovge`) to keep execution strictly linear and monotonic:
+
+```text
+               +----------------------------------------+
+               |              Function Entry            |
+               |  (No stack setup, no memory writes)    |
+               |  Arguments already in registers:       |
+               |      %rdi = a,  %rsi = b               |
+               +----------------------------------------+
+                                   |
+                                   v  [Monotonic Flow: %rip advances]
+               +----------------------------------------+
+               |             1. Comparison              |
+               |  cmpq   %rsi, %rdi                     |
+               |  Computes: (%rdi - %rsi) = (a - b)     |
+               |  Sets flags: CF, ZF, SF, OF in %rflags |
+               +----------------------------------------+
+                                   |
+                                   v  [Monotonic Flow: %rip advances]
+               +----------------------------------------+
+               |        2. Default Assignment           |
+               |  movq   %rsi, %rax                     |
+               |  State: %rax = b                       |
+               +----------------------------------------+
+                                   |
+                                   v  [Monotonic Flow: %rip advances]
+               +----------------------------------------+
+               |         3. Conditional Move            |
+               |  cmovge %rdi, %rax                     |
+               |  Condition: (SF ^ OF) == 0 (i.e. a>=b) |
+               |                                        |
+               |  [ a >= b ]: %rax <-- %rdi (value a)   |
+               |  [ a <  b ]: %rax unchanged (value b)  |
+               +----------------------------------------+
+                                   |
+                                   v  [Monotonic Flow: %rip advances]
+               +----------------------------------------+
+               |             Function Exit              |
+               |  ret (Returns value in %rax)           |
+               +----------------------------------------+
+Architectural Contrast: Conditional Jump (-O0) vs. Conditional Move (-O2)Metric-O0 (Conditional Jump: jle / jmp)-O2 (Conditional Move: cmovge)Instruction Count10 instructions (stack + jumps)4 instructions (all register-level)Branch PenaltySubject to branch misprediction penalty (15–30 cycles)0 branch penalty (pipeline never stalls)Execution FlowNon-monotonic (%rip branches to .L2 / .L3)Strictly monotonic (%rip advances linearly)Memory Access4 stack writes, 4 stack reads0 memory reads/writes (pure registers)
